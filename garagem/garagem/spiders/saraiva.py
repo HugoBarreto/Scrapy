@@ -3,11 +3,18 @@ from scrapy_splash import SplashRequest
 
 class SaraivaSpider(scrapy.Spider):
     name = "saraiva"
-    start_urls = ['https://busca.saraiva.com.br/busca?q=intrinseca&page=1']
+    start_urls = ['https://busca.saraiva.com.br/busca?q=intrinseca&page=1',
+        'https://busca.saraiva.com.br/busca?q=saraiva&page=1',
+        'https://busca.saraiva.com.br/busca?q=sextante',
+        'https://busca.saraiva.com.br/busca?q=companhia-das-letras',
+        'https://busca.saraiva.com.br/busca?q=rocco',
+        'https://busca.saraiva.com.br/busca?q=harpercollins',
+        'https://busca.saraiva.com.br/busca?q=record',
+        'https://busca.saraiva.com.br/busca?q=cia-das-letrinhas']
 
-    # def start_requests(self):
-    #     for url in self.start_urls:
-    #         yield SplashRequest(url=url, callback=self.parse)
+    def start_requests(self):
+        for url in self.start_urls:
+            yield SplashRequest(url=url, callback=self.parse, args={'wait': 0.5,})
 
     def parse(self, response):
         '''
@@ -22,24 +29,23 @@ class SaraivaSpider(scrapy.Spider):
             product_info = product.css('div[class*="info"]')
             rating = product_info.xpath('.//div[@class="rating"]//@style').extract_first(default='null').split(':')[-1]
             evals = product_info.xpath('.//div[@class="rating"]/following-sibling::*/text()').re_first('\d+') if rating is not 'null' else '0'
+            price = product.xpath('./@data-price').extract_first().replace(',', '.')
+            old_price = product_info.css('span[class*="old-price"]::text').re_first('\d+,?\d+')
+            old_price = old_price.replace(',', '.') if old_price is not None else price
+            discount = f'{(1 - float(price)/float(old_price)):.0%}'
             yield {
                     'id' : product.xpath('./@data-pid').extract_first(),
-                    'title' : product.xpath('./@data-name').extract_first(),
                     'brand' : product.xpath('./@data-brand').extract_first(),
-                    'price' : product.xpath('./@data-price').extract_first(),
-                    #old_price - Falta implementar
+                    'title' : product.xpath('./@data-name').extract_first(),
+                    'price' : price,
+                    'old_price' : old_price,
+                    'discount' : discount,
                     'author' : product_info.css('div[class*="subtitle"]::text').extract_first(),
                     'available' : 'false' if 'Produto indisponível' in product.xpath('.//text()').extract() else 'true',
                     'url' : product.xpath('./@data-prpdurl').extract_first(),
                     'rating' : rating,
                     'evals' : evals,
                   }
-
-            # if (only_once) and (rating is 'null'):
-            #     print('O que está acontecendo?')
-            #     from scrapy.shell import inspect_response
-            #     inspect_response(response, self)
-            #     only_once = False
 
         nextPage = response.xpath('//div[@class="neemu-pagination-container bottom"]//li[@class="neemu-pagination-next"]//@href').extract_first()
         if nextPage is not None:
