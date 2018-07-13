@@ -13,7 +13,7 @@ BOT_NAME = 'garagem'
 
 SPIDER_MODULES = ['garagem.spiders']
 NEWSPIDER_MODULE = 'garagem.spiders'
-
+#DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'garagem (+http://www.yourdomain.com)'
@@ -44,17 +44,21 @@ ROBOTSTXT_OBEY = True
 #   'Accept-Language': 'en',
 #}
 
+#SPLASH_URL = 'http://192.168.59.103:8050'
+
 # Enable or disable spider middlewares
 # See https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    'garagem.middlewares.GaragemSpiderMiddleware': 543,
-#}
+# SPIDER_MIDDLEWARES = {
+#     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+# }
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'garagem.middlewares.GaragemDownloaderMiddleware': 543,
-#}
+# DOWNLOADER_MIDDLEWARES = {
+#     'scrapy_splash.SplashCookiesMiddleware': 723,
+#     'scrapy_splash.SplashMiddleware': 725,
+#     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+# }
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
