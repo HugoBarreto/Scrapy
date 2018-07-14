@@ -7,22 +7,38 @@
 from re import sub, search
 
 class LivroPipeline(object):
+
     def process_item(self, item, spider):
-        item['rating'] = float(item.get('rating').split(':')[-1][:-1])/10 if item.get('rating') is not None else None
-        item['price'] = parsing_price(item)
-        item['old_price'] = float(sub(r'[^\d,]','', item.get('old_price')).replace(',', '.')) if item.get('old_price') is not None else item.get('price')
+        item['rating'] = float(item.get('rating').split(':')[-1][:-1])/10 if item.get('rating', None) is not None else None
+        item['price'] = self.parsing_price(item.get('price'), spider=spider)
+        item['old_price'] = self.parsing_price(item.get('old_price'), spider=spider)
+
+        if item.get('old_price'):
+            item['discount'] = f"{(1 - item.get('price')/item.get('old_price')):.0%}" if item.get('old_price') > 0 else '0%'
+        else:
+            item['old_price'] = item.get('price')
+            item['discount'] = '0%'
+
         return item
 
-    def parsing_price(item):
-        price = item.get('price')
-        searchObj = search(r'((\d+(?:[.,]\d{3})*)(?:[.,])(\d+))|\d+', price)
+    def parsing_price(self, price, spider):
+        '''
+        parsing_price(str) -> float
+
+        Takes any string represantition of a product's price and parses it to float
+
+        'RS$ 100,58' -> 100.58 | 'US$ 1,400.58' -> 1400.58 | '1.100,00' -> 1100.00
+        '''
+        #This regex captures any price expression, check: https://regex101.com/r/mXbsGX/3
+        searchObj = search(r'((\d+(?:[.,]\d{3})*)(?:[.,])(\d+))|\d+', price) if price is not None else None
         if searchObj:
-            if len(searchObj.groups()) == 1:
+            if searchObj.groups()[0] is None:
                 parsed_price = searchObj.group()
             else:
                 (num, inter, decimal) = searchObj.groups()
                 inter = sub(r'[^\d]', '', inter)
-                parsed_price =  inter + '.' + decimal
+                parsed_price =  inter + '.' + decimal if len(decimal) != 3 else inter + decimal
         else:
-            raise DropItem(f"Missing price in {item}")
-        return float(parsed_price)
+            parsed_price = None
+            #raise DropItem(f"Missing price in {item}")
+        return float(parsed_price) if parsed_price is not None else None
